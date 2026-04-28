@@ -30,7 +30,7 @@ Plus a **Setup** tab where you configure all of this without touching code.
 ## Quick start
 
 ```bash
-git clone <this-repo> reddit-monitor && cd reddit-monitor
+git clone git@github.com:chaitanyashah90/street-chatter.git && cd street-chatter
 
 python3 -m venv .venv
 source .venv/bin/activate
