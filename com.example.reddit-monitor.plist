@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS LaunchAgent template for the Reddit monitor's daily-alert script.
+
+  To install:
+    1. Copy this file to ~/Library/LaunchAgents/com.<you>.reddit-monitor.plist
+    2. Replace REPLACE_WITH_REPO_PATH with the absolute path to this repo.
+    3. Replace the Label with a unique reverse-DNS string of your choice.
+    4. Adjust the StartCalendarInterval (Hour/Minute) to your preferred run time.
+    5. Run: launchctl load ~/Library/LaunchAgents/com.<you>.reddit-monitor.plist
+
+  The script reads its banner title from config.app.notification_title.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.reddit-monitor</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>REPLACE_WITH_REPO_PATH/.venv/bin/python</string>
+        <string>REPLACE_WITH_REPO_PATH/check_new_mentions.py</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>REPLACE_WITH_REPO_PATH</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>12</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>REPLACE_WITH_REPO_PATH/data/monitor.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>REPLACE_WITH_REPO_PATH/data/monitor.stderr.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/bin:/bin:/usr/local/bin</string>
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

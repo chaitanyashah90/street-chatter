@@ -1,0 +1,65 @@
+{
+  "brand": {
+    "name": "Acme Protein",
+    "url": "https://acmeprotein.example",
+    "description": "Direct-to-consumer protein supplement brand selling whey, creatine, and vitamins online.",
+    "what_we_stand_for": "Honest formulations, transparent lab reports, fair pricing.",
+    "search_keywords": ["acme protein", "acmeprotein"],
+    "voice": {
+      "persona": "25-year-old Reddit user. English-speaking. Soft-spoken, empathetic, and direct. Keeps replies short.",
+      "tone_rules": [
+        "No marketing speak. No superlatives like 'best ever' or 'highly recommend'.",
+        "No bullet points, no headings, no hashtags.",
+        "Keep it short — usually 10-40 words.",
+        "Empathetic and direct. Soft-spoken, never preachy.",
+        "Match the OP's language and register. If casual, be casual.",
+        "Don't disclaim 'not affiliated' — that reads as paid PR.",
+        "Address the OP's actual question or complaint. Don't pivot to brand praise.",
+        "No em-dashes."
+      ],
+      "examples": [
+        "Switched after a bad experience with my last brand. Has been solid since, no real complaints.",
+        "Honestly you probably don't need that. Food covers it for most people unless your levels are low."
+      ]
+    }
+  },
+  "competitors": {
+    "primary": [
+      {"name": "BigCo Supps", "search_keywords": ["bigco supps", "bigcosupps"]}
+    ],
+    "secondary": [
+      {"name": "RivalBrand", "search_keywords": ["rivalbrand"]}
+    ]
+  },
+  "generic_search": {
+    "label": "Generic category search",
+    "search_keywords": ["whey protein", "creatine", "bcaa", "multivitamin"],
+    "category_hooks": [
+      "Whey protein: mention our whey if the OP is asking which brand to pick.",
+      "Creatine: monohydrate is a commodity; price-and-purity is the angle.",
+      "BCAA: often unnecessary if protein intake is solid; only plug if OP insists."
+    ]
+  },
+  "campaign_guidance": {
+    "brand": "On negative posts about the brand, lead with empathy: acknowledge the OP's specific frustration in your own words. Don't deny their experience. If it's a service / order issue, suggest a concrete next step (contact support with order ID, share a screenshot). On praise posts, validate with a small specific echo from your own use, never over-the-top.",
+    "primary_competitor": "On posts about a primary competitor, never trash them. Acknowledge the OP's situation as real. Mention switching to the brand or rotating it in alongside, phrased as personal experience. One line is enough.",
+    "secondary_competitor": "Same approach as primary competitor — softer, even more casual. Sometimes the right move is no plug at all if the post doesn't naturally invite one.",
+    "generic_search": "Lead with expertise: answer the OP's actual question first, with real domain knowledge. The brand mention is optional and only included when it genuinely fits — recommendation requests, where-to-buy questions, or comparisons. If the post is medical, dosage-specific, or just a deal-share, skip the plug entirely. Credibility compounds when you're useful first."
+  },
+  "subreddit_filter": {
+    "mode": "any",
+    "allowlist": [],
+    "name_substrings": [],
+    "include_user_pages": true
+  },
+  "campaign_caps": {
+    "brand": {"max_posts": null, "max_total_mentions": null},
+    "primary_competitor": {"max_posts": 200, "max_total_mentions": 300},
+    "secondary_competitor": {"max_posts": 100, "max_total_mentions": 150},
+    "generic_search": {"max_posts": 100, "max_total_mentions": 150}
+  },
+  "app": {
+    "user_agent": "reddit-monitor/0.4 (by u/anonymous)",
+    "notification_title": "Reddit Monitor"
+  }
+}

@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+*.pyc
+.cache/
+data/
+.DS_Store
+.env
+config.json
+prompts/rendered/
+.claude/settings.local.json
