@@ -954,13 +954,20 @@ def _render_pending_row(
         if last_err:
             st.caption(f"⚠️ {last_err[:160]}")
 
-    # Draft textarea — persists to store on edit
+    # Draft textarea — persists to store on edit.
+    # Seed session_state before the widget renders so we can avoid passing
+    # both `value=` and `key=` (Streamlit warns when a widget has a default
+    # AND its session_state slot is set — exactly the situation the bulk
+    # drafter triggers when it writes the new draft text into session_state
+    # at the top of the panel).
     with c[6]:
+        textarea_key = f"draft_text_{campaign_key}_{post_id}"
         current = action.get("draft_text") or ""
+        if textarea_key not in st.session_state:
+            st.session_state[textarea_key] = current
         edited = st.text_area(
             "draft",
-            value=current,
-            key=f"draft_text_{campaign_key}_{post_id}",
+            key=textarea_key,
             height=110,
             label_visibility="collapsed",
             placeholder="Click 📝 Draft, or type your own.",
