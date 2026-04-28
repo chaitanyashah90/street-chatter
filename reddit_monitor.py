@@ -668,7 +668,7 @@ def _save_analysis_cache(entries: dict[str, dict]) -> None:
 #   "<Competitor> Review — concerned about <Competitor>, switching to <Brand>"
 # is brand-positive but contains every "concerned/regret/avoid" trigger.
 # We need the model to see which brand each negative phrase refers to.
-# `claude -p` uses the user's Max plan auth — no API key needed.
+# `claude -p` uses the user's Pro or Max plan auth — no API key needed.
 
 _LLM_SYSTEM_TMPL = """You score Reddit mentions for {subject_label} brand monitoring.
 

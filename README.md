@@ -12,7 +12,7 @@ Open-source Reddit brand & competitor monitoring dashboard for marketers. Track 
 Powered by:
 - **Streamlit** for the dashboard
 - **Reddit search + PullPush** for mention discovery
-- **Claude** (via the local `claude` CLI — uses your Max plan auth, no API key) for entity-aware sentiment, action-type classification, executive summaries, and reply drafting
+- **Claude** (via the local `claude` CLI — uses your Pro or Max plan auth, no API key) for entity-aware sentiment, action-type classification, executive summaries, and reply drafting
 - **Playwright** for posting replies back to Reddit
 - **SQLite** for persistent history
 
@@ -38,7 +38,7 @@ pip install -r requirements.txt
 playwright install chromium
 
 # Make sure `claude` CLI is on your PATH and you're logged in to your
-# Claude Max plan: https://docs.claude.com/en/docs/claude-code
+# Claude Pro or Max plan: https://docs.claude.com/en/docs/claude-code
 ```
 
 ### Option A — guided onboarding via Claude Code (recommended)
@@ -103,7 +103,7 @@ The first time you click **Login to Reddit** in the sidebar, Playwright opens a 
 
 ## Caveats
 
-- The reply drafter, sentiment, and summary all call the local `claude` CLI. If you don't have Claude Max, you can swap them for the Anthropic API SDK with minor edits — every LLM call goes through one `subprocess.run(['claude', '-p', ...])` site per file.
+- The reply drafter, sentiment, and summary all call the local `claude` CLI. Works with either a Claude **Pro** or **Max** subscription. Pro has tighter usage limits — heavy days (large competitor sweeps, batch drafting 20+ replies) may hit the rolling cap. If you outgrow Pro, upgrade to Max or swap the calls for the Anthropic API SDK with minor edits — every LLM call goes through one `subprocess.run(['claude', '-p', ...])` site per file.
 - The keyword sentiment scorer has hand-tuned regexes for "never buy", "scam", "highly recommend", etc. These work for English. The LLM analyzer takes over for entity-aware scoring, so a post mixed across brands is scored correctly per-campaign.
 - This is a marketing tool for surfacing relevant posts and drafting on-voice replies. It's not a posting bot — every reply is reviewed by you before submission. Be mindful of subreddit rules and Reddit's content policy.
 

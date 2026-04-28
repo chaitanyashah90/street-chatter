@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Street Chatter — Reddit brand monitoring for marketers</title>
+<meta name="description" content="Open-source Reddit brand & competitor monitoring dashboard. Entity-aware sentiment, on-voice reply drafting, direct posting. Powered by Claude." />
+<meta property="og:title" content="Street Chatter — Reddit Brand Monitor" />
+<meta property="og:description" content="Open-source Reddit brand monitoring & reply-drafting tool for marketers." />
+<meta property="og:type" content="website" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  :root {
+    --bg: #0e0f12;
+    --panel: #15171c;
+    --panel-soft: #1a1d24;
+    --border: #2a2e38;
+    --text: #e8e9ec;
+    --text-dim: #9098a4;
+    --accent: #ff7e54;        /* warm Anthropic-ish terracotta */
+    --accent-soft: #ffb89a;
+    --good: #4ade80;
+    --reddit: #ff4500;
+    --link: #79c0ff;
+    --code-bg: #0a0b0e;
+    --radius: 14px;
+    --max: 1080px;
+  }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre, .mono { font-family: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace; }
+
+  /* hero */
+  header.hero {
+    position: relative;
+    overflow: hidden;
+    padding: 80px 24px 100px;
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(circle at 10% 0%, rgba(255, 126, 84, 0.18), transparent 40%),
+      radial-gradient(circle at 90% 30%, rgba(121, 192, 255, 0.10), transparent 40%),
+      var(--bg);
+  }
+  .hero-inner { max-width: var(--max); margin: 0 auto; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding: 4px 10px;
+    border: 1px solid rgba(255, 126, 84, 0.4);
+    border-radius: 999px;
+    background: rgba(255, 126, 84, 0.07);
+  }
+  h1 {
+    font-size: clamp(40px, 6vw, 64px);
+    line-height: 1.05;
+    margin: 0 0 20px;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+  }
+  h1 .grad {
+    background: linear-gradient(90deg, #ff7e54, #ffb89a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .lede {
+    font-size: clamp(17px, 1.6vw, 19px);
+    color: var(--text-dim);
+    max-width: 680px;
+    margin: 0 0 32px;
+  }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  /* CTA */
+  .cta-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: transform 0.05s ease, background 0.15s ease, border-color 0.15s ease;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-primary { background: var(--accent); color: #1a0e08; border-color: var(--accent); }
+  .btn-primary:hover { background: #ffa07d; border-color: #ffa07d; }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { background: var(--panel-soft); border-color: #3a4150; }
+
+  /* badge row */
+  .badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .badges img { height: 22px; }
+
+  /* sections */
+  section { padding: 72px 24px; border-bottom: 1px solid var(--border); }
+  section .inner { max-width: var(--max); margin: 0 auto; }
+  h2 {
+    font-size: clamp(24px, 3vw, 30px);
+    margin: 0 0 12px;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+  }
+  .section-lede { color: var(--text-dim); margin: 0 0 36px; max-width: 640px; }
+
+  /* features grid */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .feature {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: border-color 0.15s ease, transform 0.05s ease;
+  }
+  .feature:hover { border-color: #3a4150; transform: translateY(-2px); }
+  .feature h3 {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .feature .icon {
+    width: 38px; height: 38px;
+    border-radius: 9px;
+    background: rgba(255, 126, 84, 0.12);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 14px;
+    font-size: 20px;
+  }
+  .feature p { margin: 0; color: var(--text-dim); font-size: 14px; line-height: 1.55; }
+
+  /* how it works */
+  .steps { counter-reset: step; }
+  .step {
+    display: flex;
+    gap: 20px;
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .step:first-child { border-top: none; padding-top: 0; }
+  .step:last-child { padding-bottom: 0; }
+  .step-num {
+    flex: 0 0 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 126, 84, 0.12);
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .step h3 { margin: 4px 0 6px; font-size: 16px; font-weight: 700; }
+  .step p { margin: 0 0 10px; color: var(--text-dim); font-size: 14.5px; }
+  pre.terminal {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    overflow-x: auto;
+    font-size: 13px;
+    color: #d4d4d4;
+    margin: 0;
+  }
+  pre.terminal .prompt { color: var(--text-dim); user-select: none; }
+  pre.terminal .cmd { color: var(--good); }
+  pre.terminal .slash { color: var(--accent); font-weight: 600; }
+  pre.terminal .comment { color: #6b7280; font-style: italic; }
+
+  /* stack badges row */
+  .stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+  }
+  .pill {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+  }
+  .pill strong { color: var(--text); font-weight: 600; }
+
+  /* footer */
+  footer {
+    padding: 40px 24px 56px;
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  footer .footer-links {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 640px) {
+    header.hero { padding: 56px 20px 72px; }
+    section { padding: 56px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="eyebrow">Open-source · MIT</span>
+    <h1>Track Reddit chatter about <span class="grad">your brand</span>. Reply in your voice.</h1>
+    <p class="lede">
+      Street Chatter is a self-hosted Reddit brand monitor for marketers.
+      Entity-aware sentiment (so a post trashing a competitor while switching to you reads as <em>brand-positive</em>), executive summaries, on-voice reply drafts, and direct posting — all powered by <strong>Claude</strong> via your existing <strong>Pro or Max</strong> subscription.
+      <strong>No API keys required.</strong>
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="https://github.com/chaitanyashah90/street-chatter">
+        View on GitHub →
+      </a>
+      <a class="btn btn-secondary" href="#how-it-works">How it works</a>
+    </div>
+    <div class="badges">
+      <img src="https://img.shields.io/badge/python-3.9+-3776AB?logo=python&logoColor=white&labelColor=555555" alt="python 3.9+" />
+      <img src="https://img.shields.io/badge/streamlit-1.30+-FF4B4B?logo=streamlit&logoColor=white&labelColor=555555" alt="streamlit 1.30+" />
+      <img src="https://img.shields.io/badge/playwright-1.40+-2EAD33?logo=playwright&logoColor=white&labelColor=555555" alt="playwright 1.40+" />
+      <img src="https://img.shields.io/badge/chromium-bundled-4285F4?logo=googlechrome&logoColor=white&labelColor=555555" alt="chromium bundled" />
+      <img src="https://img.shields.io/badge/claude%20code-required-DA7756?logo=anthropic&logoColor=white&labelColor=555555" alt="claude code required" />
+      <img src="https://img.shields.io/badge/license-MIT-yellow?labelColor=555555" alt="license MIT" />
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="inner">
+    <h2>Why Street Chatter?</h2>
+    <p class="section-lede">A focused tool, not another bloated platform. Six things it does well.</p>
+    <div class="features">
+      <div class="feature">
+        <div class="icon">🎯</div>
+        <h3>Entity-aware sentiment</h3>
+        <p>"I'm done with Competitor X, switching to you" reads as <em>your-brand positive</em> — not negative because the post is full of complaints. Powered by Claude, not keyword regex.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📑</div>
+        <h3>Four campaign tabs</h3>
+        <p>Brand · Primary Competitor · Secondary Competitor · Generic category. Each with its own sentiment summary, trendlines, and actionable post panel.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">✍️</div>
+        <h3>On-voice reply drafts</h3>
+        <p>Draft replies that match your brand voice. Per-campaign playbooks tell the LLM when to defend, when to plug an alternative, when to stay silent.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🚀</div>
+        <h3>One-click posting</h3>
+        <p>Playwright posts your reviewed drafts via your normal browser session. No API tokens, no app registration, no rate-limit headaches.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">⚙️</div>
+        <h3>Configure in 5 minutes</h3>
+        <p>Run <code class="mono">/onboard</code> in Claude Code and answer 9 conversational questions — brand, voice, competitors, search logic. Edit anything later from the Setup tab.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🔒</div>
+        <h3>Self-hosted, private</h3>
+        <p>Runs locally on your machine. SQLite for history, your config, your data. Nothing phones home. Open-source MIT.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how-it-works">
+  <div class="inner">
+    <h2>How it works</h2>
+    <p class="section-lede">Four steps from clone to your first reply draft.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div style="flex: 1; min-width: 0;">
+          <h3>Clone the repo</h3>
+          <p>Pre-req: Python 3.9+ and the <a href="https://docs.claude.com/en/docs/claude-code">Claude Code CLI</a> authenticated to your Pro or Max plan.</p>
+<pre class="terminal"><span class="prompt">$</span> <span class="cmd">git clone https://github.com/chaitanyashah90/street-chatter.git</span>
+<span class="prompt">$</span> <span class="cmd">cd street-chatter</span></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div style="flex: 1; min-width: 0;">
+          <h3>Run /onboard</h3>
+          <p>Open the repo in Claude Code. The slash command walks you through brand identity, competitors, voice, and search logic in 9 conversational steps. It also installs Playwright Chromium automatically.</p>
+<pre class="terminal"><span class="prompt">$</span> <span class="cmd">claude</span>   <span class="comment"># start a Claude Code session</span>
+<span class="prompt">&gt;</span> <span class="slash">/onboard</span></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div style="flex: 1; min-width: 0;">
+          <h3>Dashboard launches</h3>
+          <p>At the end of <code class="mono">/onboard</code>, the dashboard auto-launches at <code class="mono">http://localhost:8501</code>. Five tabs: four campaigns plus <strong>⚙️ Setup</strong> for editing any setting later.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div style="flex: 1; min-width: 0;">
+          <h3>Track, draft, post</h3>
+          <p>Click any tab to fetch live mentions. The Actionable panel surfaces posts worth responding to. Hit <strong>Generate draft</strong> for a Claude-written reply in your voice. Review, edit, click <strong>Submit to Reddit</strong>. Done.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="inner">
+    <h2>Built with</h2>
+    <p class="section-lede">A small, sharp toolset. No JavaScript framework wars, no proprietary lock-in.</p>
+    <div class="stack">
+      <span class="pill"><strong>Streamlit</strong> — dashboard</span>
+      <span class="pill"><strong>Claude</strong> — sentiment + drafting</span>
+      <span class="pill"><strong>Playwright</strong> — Reddit posting</span>
+      <span class="pill"><strong>Reddit search + PullPush</strong> — mention discovery</span>
+      <span class="pill"><strong>SQLite</strong> — local persistence</span>
+      <span class="pill"><strong>Python 3.9+</strong></span>
+    </div>
+  </div>
+</section>
+
+<section id="get-started">
+  <div class="inner" style="text-align: center;">
+    <h2 style="margin-bottom: 16px;">Ready to listen?</h2>
+    <p class="section-lede" style="margin-left: auto; margin-right: auto;">Five minutes from clone to your first sentiment summary. MIT license. Self-hosted. Yours.</p>
+    <div class="cta-row" style="justify-content: center;">
+      <a class="btn btn-primary" href="https://github.com/chaitanyashah90/street-chatter">Clone on GitHub →</a>
+      <a class="btn btn-secondary" href="https://github.com/chaitanyashah90/street-chatter/blob/main/README.md">Read the docs</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-links">
+    <a href="https://github.com/chaitanyashah90/street-chatter">GitHub</a>
+    <a href="https://github.com/chaitanyashah90/street-chatter/issues">Issues</a>
+    <a href="https://github.com/chaitanyashah90/street-chatter/blob/main/LICENSE">License (MIT)</a>
+  </div>
+  <div>Street Chatter — open-source Reddit brand monitor.</div>
+</footer>
+
+</body>
+</html>

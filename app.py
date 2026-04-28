@@ -53,7 +53,7 @@ if not _cfg_ok:
 st.title(f"{_BRAND_NAME} Reddit Monitor")
 st.caption(
     f"Brand monitoring + competitor intelligence for {_BRAND_NAME}. "
-    "Sentiment & summaries via Claude (your Max plan). Posts via Reddit search; "
+    "Sentiment & summaries via Claude (your Pro or Max plan). Posts via Reddit search; "
     "comments via PullPush. Persistent store in data/monitor.db."
 )
 

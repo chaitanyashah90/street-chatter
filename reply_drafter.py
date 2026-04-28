@@ -1,7 +1,7 @@
 """Draft Reddit replies for actionable mentions, per campaign.
 
 Calls the local `claude` CLI in headless mode (`claude -p`) so the user's
-Claude Max plan auth is reused — no API key needed.
+Claude Pro or Max plan auth is reused — no API key needed.
 
 Each campaign has its own guidance template in prompts/templates/. The
 template contains $-style placeholders (brand_name, brand_keyword, persona,

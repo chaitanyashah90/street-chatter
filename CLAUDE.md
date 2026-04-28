@@ -36,7 +36,7 @@ playwright install chromium
 streamlit run app.py
 ```
 
-The `claude` CLI must be on `$PATH` and authenticated to a Claude Max plan — every LLM call uses your existing auth, no API key needed.
+The `claude` CLI must be on `$PATH` and authenticated to a Claude **Pro or Max** plan — every LLM call uses your existing auth, no API key needed. Pro works fine for typical use; heavy fetches and batch drafting may hit Pro's rolling usage cap, in which case Max gives more headroom.
 
 ## Common tasks
 
