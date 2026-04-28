@@ -1,4 +1,11 @@
-# Reddit Brand Monitor
+# Street Chatter — Reddit Brand Monitor
+
+[![python](https://img.shields.io/badge/python-3.9+-3776AB?logo=python&logoColor=white&labelColor=555555)](https://www.python.org/)
+[![streamlit](https://img.shields.io/badge/streamlit-1.30+-FF4B4B?logo=streamlit&logoColor=white&labelColor=555555)](https://streamlit.io/)
+[![playwright](https://img.shields.io/badge/playwright-1.40+-2EAD33?logo=playwright&logoColor=white&labelColor=555555)](https://playwright.dev/python/)
+[![chromium](https://img.shields.io/badge/chromium-bundled-4285F4?logo=googlechrome&logoColor=white&labelColor=555555)](https://playwright.dev/python/docs/browsers)
+[![claude](https://img.shields.io/badge/claude%20code-required-DA7756?logo=anthropic&logoColor=white&labelColor=555555)](https://docs.claude.com/en/docs/claude-code)
+[![license](https://img.shields.io/badge/license-MIT-yellow?labelColor=555555)](LICENSE)
 
 Open-source Reddit brand & competitor monitoring dashboard for marketers. Track mentions of your brand and your competitors across Reddit, score sentiment per-entity (so a post trashing a competitor while switching to you is correctly read as brand-positive), summarize themes, and draft on-brand replies that you can post directly from the dashboard.
 
