@@ -31,7 +31,7 @@ Plus a **Setup** tab where you configure all of this without touching code.
 
 ### Option A — Install via Claude Code (recommended)
 
-simple install
+Open claude code, start a session, point to a folder, and use this link to kick start.
 
 ```bash
 
