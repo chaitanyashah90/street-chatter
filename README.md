@@ -29,6 +29,17 @@ Plus a **Setup** tab where you configure all of this without touching code.
 
 ## Quick start
 
+### Option A — Install via Claude Code (recommended)
+
+simple install
+
+```bash
+
+Install this repo: https://github.com/chaitanyashah90/street-chatter/tree/main
+```
+
+### Option B 
+
 ```bash
 git clone git@github.com:chaitanyashah90/street-chatter.git && cd street-chatter
 
@@ -36,10 +47,9 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 playwright install chromium
-
+```
 # Make sure `claude` CLI is on your PATH and you're logged in to your
 # Claude Pro or Max plan: https://docs.claude.com/en/docs/claude-code
-```
 
 ### Option A — guided onboarding via Claude Code (recommended)
 
