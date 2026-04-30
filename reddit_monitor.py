@@ -1,8 +1,9 @@
 """Reddit mention monitor.
 
 Fetches posts and comments matching the configured brand and competitor
-keywords, scores sentiment via a hybrid keyword + LLM analyzer, and returns
-a pandas DataFrame ready for trendline plotting.
+keywords (both via the PullPush API — same source for both, no Reddit
+search rate limit), scores sentiment via a hybrid keyword + LLM analyzer,
+and returns a pandas DataFrame ready for trendline plotting.
 
 The keyword scorer handles obvious complaint and praise patterns ("never
 buy", "do not buy", "avoid", "is it legit", "genuine", "recommend"). The LLM
@@ -30,6 +31,8 @@ import requests
 
 from config import build_campaigns, load_config, primary_brand_keyword
 
+PULLPUSH_SUBMISSION_URL = "https://api.pullpush.io/reddit/search/submission/"
+PULLPUSH_COMMENT_URL = "https://api.pullpush.io/reddit/search/comment/"
 REDDIT_SEARCH_URL = "https://www.reddit.com/search.json"
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -145,13 +148,88 @@ class FetchResult:
 _REDDIT_THROTTLED = False
 
 
-def _search_one(query: str, sort: str, limit: int, time_filter: str) -> list[dict]:
-    """Call Reddit's public search JSON endpoint and return raw children.
+def _search_via_pullpush(
+    query: str, sort: str, limit: int, time_filter: str
+) -> list[dict]:
+    """Search Reddit submissions via PullPush. Returns Reddit-shaped children.
 
-    Bounded retries on 429 with short exponential backoff. Once we trip the
-    module-level circuit breaker, every subsequent call returns [] immediately
-    so the dashboard doesn't sit waiting for a recovery that won't come on
-    this run. The store-augment fallback kicks in instead.
+    No auth, no rate limit, no per-search billing. The trade-off is index
+    freshness — PullPush's submission ingester has had multi-month outages
+    historically, so empty results don't necessarily mean "no matches", they
+    might mean "PullPush hasn't indexed anything new in a while". The hybrid
+    `_search_one` below falls back to Reddit's live search when this returns
+    nothing.
+
+    Each result is wrapped as `{"kind": "t3", "data": d}` so the downstream
+    `_post_to_mention` (which reads `child["data"][...]`) works unchanged.
+
+    `sort` mapping (Reddit search sort → PullPush sort_type):
+      - "new"       → created_utc, descending (newest first)
+      - "relevance" → score, descending (highest-scored — closest analogue;
+                       PullPush has no relevance ranker)
+    """
+    sort_type = "score" if sort == "relevance" else "created_utc"
+    seconds = _TIME_FILTER_SECONDS.get(time_filter)
+    after_ts = int(time.time()) - seconds if seconds is not None else None
+
+    results: list[dict] = []
+    remaining = limit
+    before: int | None = None
+    while remaining > 0:
+        page_size = min(100, remaining)
+        params: dict = {
+            "q": query.strip('"'),
+            "size": page_size,
+            "sort_type": sort_type,
+            "sort": "desc",
+        }
+        if after_ts is not None:
+            params["after"] = after_ts
+        if before is not None:
+            params["before"] = before
+        try:
+            resp = requests.get(
+                PULLPUSH_SUBMISSION_URL,
+                params=params,
+                headers={"User-Agent": USER_AGENT},
+                timeout=30,
+            )
+        except requests.RequestException as e:
+            print(f"[pullpush] submission request error on '{query}': {e}")
+            break
+        if resp.status_code != 200:
+            print(f"[pullpush] submission status {resp.status_code} on '{query}'")
+            break
+        try:
+            payload = resp.json().get("data") or []
+        except ValueError:
+            break
+        if not payload:
+            break
+        results.extend({"kind": "t3", "data": d} for d in payload)
+        remaining -= len(payload)
+        if len(payload) < page_size:
+            break
+        oldest = min(
+            (int(d.get("created_utc", 0)) for d in payload if d.get("created_utc")),
+            default=0,
+        )
+        if oldest <= 0:
+            break
+        before = oldest - 1
+        time.sleep(0.3)
+    return results
+
+
+def _search_via_reddit(
+    query: str, sort: str, limit: int, time_filter: str
+) -> list[dict]:
+    """Search Reddit submissions via the public `search.json` endpoint.
+
+    Live (always up-to-date) but rate-limited. We don't retry on 429 — instead
+    we trip the module-level circuit breaker so subsequent calls in this run
+    return [] immediately, and the store-augment fallback in `fetch_mentions`
+    populates the dashboard from cached history.
     """
     global _REDDIT_THROTTLED
     if _REDDIT_THROTTLED:
@@ -171,9 +249,6 @@ def _search_one(query: str, sort: str, limit: int, time_filter: str) -> list[dic
         }
         if after:
             params["after"] = after
-        # Single attempt, no 429 backoff — if Reddit is throttling, we trip
-        # the circuit breaker immediately and let the store-augment fallback
-        # populate the view. Faster fail = better UX than minutes of backoff.
         try:
             resp = requests.get(
                 REDDIT_SEARCH_URL,
@@ -192,7 +267,8 @@ def _search_one(query: str, sort: str, limit: int, time_filter: str) -> list[dic
             )
             _REDDIT_THROTTLED = True
             break
-        resp.raise_for_status()
+        if resp.status_code != 200:
+            break
         data = resp.json().get("data", {})
         children = data.get("children", [])
         if not children:
@@ -204,6 +280,27 @@ def _search_one(query: str, sort: str, limit: int, time_filter: str) -> list[dic
             break
         time.sleep(1.0)
     return results
+
+
+def _search_one(query: str, sort: str, limit: int, time_filter: str) -> list[dict]:
+    """Hybrid Reddit submission search.
+
+    Strategy: try PullPush first — it has no rate limit, so when its index is
+    healthy we never touch Reddit and the dashboard can refresh as often as
+    the marketer wants. If PullPush returns nothing (either no matches OR its
+    index is stale, which it has been intermittently for months), fall back
+    to Reddit's `search.json` — live but rate-limited; the circuit breaker
+    in `_search_via_reddit` handles 429s by tripping `_REDDIT_THROTTLED` so
+    the store-augment fallback can populate the view.
+
+    Returns Reddit-shaped children (`{"kind": "t3", "data": {...}}`) so
+    `_post_to_mention` can consume the result unchanged either way.
+    """
+    pull_hits = _search_via_pullpush(query, sort, limit, time_filter)
+    if pull_hits:
+        return pull_hits
+    # PullPush empty — could be no matches OR a stale index. Try Reddit live.
+    return _search_via_reddit(query, sort, limit, time_filter)
 
 
 def reset_throttle() -> None:
@@ -300,9 +397,8 @@ def _contains_query(text: str, queries: Iterable[str]) -> bool:
 #
 # Reddit's public search.json doesn't return comments (type=comment is silently
 # treated as a post search). Pushshift is dead. PullPush is the standard mirror
-# that still serves the comment endpoint.
-
-PULLPUSH_COMMENT_URL = "https://api.pullpush.io/reddit/search/comment/"
+# that serves both the submission and comment search endpoints — same source
+# we use for posts (see _search_one above), so a single backend covers both.
 
 _TIME_FILTER_SECONDS = {
     "hour": 3600,
@@ -974,8 +1070,8 @@ def fetch_mentions(
     max_posts = camp.get("max_posts")
     max_total_mentions = camp.get("max_total_mentions")
 
-    # 1. Direct post search via Reddit's search.json
-    _tick(f"Reddit post search ({len(queries)} keyword(s))")
+    # 1. Direct post search — PullPush primary, Reddit search.json fallback
+    _tick(f"Post search ({len(queries)} keyword(s))")
     for q in queries:
         for sort in ("new", "relevance"):
             children = _search_one(q, sort, limit_per_query, time_filter)
